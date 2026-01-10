@@ -73,21 +73,22 @@ class AIService:
         
         image_b64 = base64.b64encode(reference_image_bytes).decode('utf-8')
         
-        # Constructing payload. 
-        # Note: This schema assumes the image model accepts the same input structure as the text model
-        # but returns image data.
+        # Use camelCase for JSON API
         payload = {
             "contents": [{
                 "parts": [
                     {"text": f"Generate a sticker based on this prompt: {sticker_prompt}"},
                     {
-                        "inline_data": {
-                            "mime_type": mime_type,
+                        "inlineData": {
+                            "mimeType": mime_type,
                             "data": image_b64
                         }
                     }
                 ]
-            }]
+            }],
+            "generationConfig": {
+                "responseModalities": ["TEXT", "IMAGE"]
+            }
         }
 
         async with aiohttp.ClientSession() as session:
@@ -99,29 +100,45 @@ class AIService:
                 
                 data = await response.json()
                 
-                # Try to extract image from response. 
-                # Structure might be candidates -> content -> parts -> inline_data (if base64)
-                # Or it might contain a URL.
                 try:
-                    # Check for inline data (Base64)
                     candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        for part in parts:
-                            if "inline_data" in part:
-                                b64_data = part["inline_data"]["data"]
+                    if not candidates:
+                        prompt_feedback = data.get("promptFeedback", {})
+                        block_reason = prompt_feedback.get("blockReason")
+                        if block_reason:
+                            raise Exception(f"Generation blocked: {block_reason}")
+                        logger.error(f"No candidates returned. Full response: {json.dumps(data)}")
+                        raise Exception("No candidates returned from Gemini API")
+
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    for part in parts:
+                        # Check for both snake_case (Python SDK style) and camelCase (JSON API style)
+                        if "inline_data" in part:
+                            b64_data = part["inline_data"]["data"]
+                            return base64.b64decode(b64_data)
+                        
+                        if "inlineData" in part:
+                            data_obj = part["inlineData"]
+                            b64_data = data_obj.get("data")
+                            if b64_data:
                                 return base64.b64decode(b64_data)
-                            # Sometimes images are returned as separate objects or specific fields
-                            # If the model returns a text url?
-                            if "text" in part:
-                                text_content = part["text"]
-                                if text_content.startswith("http"):
-                                    # It might be a URL
-                                    return await self.download_image(text_content)
+
+                        if "text" in part:
+                            text_content = part["text"]
+                            if text_content.startswith("http"):
+                                # It might be a URL
+                                return await self.download_image(text_content)
+                            else:
+                                logger.info(f"Received text instead of image: {text_content}")
                     
+                    # Log available keys to help debugging
+                    keys_found = [list(p.keys()) for p in parts]
+                    logger.error(f"No image data found. Parts keys: {keys_found}. Full response: {json.dumps(data)}")
                     raise Exception("No image data found in response")
                     
                 except Exception as e:
                     logger.error(f"Failed to parse image response: {e}")
-                    logger.debug(f"Response data: {data}")
+                    # Only log full response if not already logged
+                    if "Full response" not in str(e):
+                        logger.debug(f"Response data: {data}")
                     raise e
