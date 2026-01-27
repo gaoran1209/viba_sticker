@@ -5,6 +5,7 @@ import io
 import re
 from config import DISCORD_TOKEN
 from ai_service import AIService
+from presets import STICKER_PRESETS
 
 # Configure logging
 logging.basicConfig(
@@ -51,7 +52,20 @@ class VibaStickerBot(discord.Client):
             cleaned_prompt = re.sub(mention_pattern, "", content).strip()
             
             if not cleaned_prompt:
-                await message.reply("请输入提示词。")
+                presets_list = "\n".join([f"- {name}" for name in STICKER_PRESETS.keys()])
+                await message.reply(f"请输入想要使用的贴纸风格名称。\n可选风格：\n{presets_list}")
+                return
+
+            # Check if prompt matches a preset (case-insensitive)
+            matched_preset = None
+            for name, prompt in STICKER_PRESETS.items():
+                if cleaned_prompt.lower() == name.lower():
+                    matched_preset = prompt
+                    break
+            
+            if not matched_preset:
+                presets_list = "\n".join([f"- {name}" for name in STICKER_PRESETS.keys()])
+                await message.reply(f"未找到该风格。请选择以下风格之一：\n{presets_list}")
                 return
 
             # Send processing message
@@ -62,16 +76,11 @@ class VibaStickerBot(discord.Client):
                 logger.info("Downloading image...")
                 image_bytes = await self.ai_service.download_image(attachment.url)
                 
-                # 2. Refine Prompt
-                logger.info("Refining prompt...")
-                sticker_prompt = await self.ai_service.refine_prompt(cleaned_prompt, image_bytes, attachment.content_type)
-                logger.info(f"Refined Prompt: {sticker_prompt}")
-
-                # 3. Generate Sticker
-                logger.info("Generating sticker...")
-                generated_image_bytes = await self.ai_service.generate_sticker(sticker_prompt, image_bytes, attachment.content_type)
+                # 2. Generate Sticker (Directly with preset prompt)
+                logger.info(f"Generating sticker with preset: {cleaned_prompt}")
+                generated_image_bytes = await self.ai_service.generate_sticker(matched_preset, image_bytes, attachment.content_type)
                 
-                # 4. Send Result
+                # 3. Send Result
                 logger.info("Sending result...")
                 with io.BytesIO(generated_image_bytes) as image_file:
                     image_file.seek(0)

@@ -2,7 +2,7 @@ import aiohttp
 import base64
 import json
 import logging
-from config import GEMINI_API_KEY, GEMINI_TEXT_MODEL, GEMINI_IMAGE_MODEL
+from config import GEMINI_API_KEY, GEMINI_IMAGE_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -19,47 +19,6 @@ class AIService:
                     return await response.read()
                 else:
                     raise Exception(f"Failed to download image. Status: {response.status}")
-
-    async def refine_prompt(self, user_prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
-        """
-        Calls gemini-3-pro-preview to refine the user prompt into a sticker prompt.
-        """
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY is not set")
-
-        url = f"{self.base_url}/{GEMINI_TEXT_MODEL}:generateContent?key={self.api_key}"
-        
-        # Convert image to base64
-        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
-        
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"text": f"You are a sticker design expert. Please convert the following user request and the attached image context into a detailed stable diffusion prompt for generating a high-quality sticker. The style should be consistent with sticker art (die-cut, white border, vector style, expressive). \n\nUser Request: {user_prompt}\n\nOutput only the prompt text, nothing else."},
-                    {
-                        "inline_data": {
-                            "mime_type": mime_type,
-                            "data": image_b64
-                        }
-                    }
-                ]
-            }]
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    text = await response.text()
-                    logger.error(f"Refine prompt failed: {text}")
-                    raise Exception(f"Gemini API Error (Refine): {response.status}")
-                
-                data = await response.json()
-                try:
-                    refined_prompt = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return refined_prompt.strip()
-                except (KeyError, IndexError) as e:
-                    logger.error(f"Unexpected response format: {data}")
-                    raise Exception("Failed to parse Gemini response")
 
     async def generate_sticker(self, sticker_prompt: str, reference_image_bytes: bytes, mime_type: str = "image/png") -> bytes:
         """
