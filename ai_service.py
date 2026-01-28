@@ -156,8 +156,8 @@ class AIService:
             }
         }
 
-        # Attempt 1: Primary Model with short timeout
-        primary_timeout = 40 
+        # Attempt 1: Primary Model
+        primary_timeout = 20
         start_time = time.time()
         try:
             logger.info(f"Attempt 1: Generating with {GEMINI_IMAGE_MODEL} (timeout={primary_timeout}s)...")
@@ -166,21 +166,32 @@ class AIService:
             elapsed = time.time() - start_time
             logger.warning(f"Attempt 1 failed ({GEMINI_IMAGE_MODEL}): {e}. Elapsed: {elapsed:.2f}s")
             
-            # If it failed quickly (e.g. rate limit), try one more time or fallback
+            # Quick Retry (Attempt 2): If failure happened within 5 seconds
             if elapsed < 5:
                 try:
-                    logger.info(f"Attempt 2: Quick retry with {GEMINI_IMAGE_MODEL}...")
-                    return await self._call_generate_api(GEMINI_IMAGE_MODEL, payload, timeout=primary_timeout)
+                    retry_timeout = 15
+                    logger.info(f"Attempt 2: Quick retry with {GEMINI_IMAGE_MODEL} (timeout={retry_timeout}s)...")
+                    return await self._call_generate_api(GEMINI_IMAGE_MODEL, payload, timeout=retry_timeout)
                 except Exception as e2:
-                    logger.warning(f"Attempt 2 failed: {e2}. Falling back to {GEMINI_IMAGE_MODEL_FALLBACK}...")
+                    logger.warning(f"Attempt 2 failed: {e2}.")
             else:
-                logger.warning(f"Attempt 1 took > 5s or timed out, falling back to {GEMINI_IMAGE_MODEL_FALLBACK}...")
+                logger.warning(f"Attempt 1 took > 5s or timed out, skipping quick retry...")
 
-        # Final Attempt: Fallback Model
-        fallback_timeout = 60
-        try:
-            logger.info(f"Attempt 3: Generating with {GEMINI_IMAGE_MODEL_FALLBACK} (timeout={fallback_timeout}s)...")
-            return await self._call_generate_api(GEMINI_IMAGE_MODEL_FALLBACK, payload, timeout=fallback_timeout)
-        except Exception as e:
-            logger.error(f"All attempts failed. Last error: {e}")
-            raise Exception(f"Failed to generate sticker. Please try again later.")
+        # Fallback Model with Retries
+        fallback_timeout = 15
+        fallback_retries = 2
+        
+        last_error = None
+        for i in range(fallback_retries):
+            try:
+                attempt_num = i + 1
+                logger.info(f"Fallback Attempt {attempt_num}/{fallback_retries}: Generating with {GEMINI_IMAGE_MODEL_FALLBACK} (timeout={fallback_timeout}s)...")
+                return await self._call_generate_api(GEMINI_IMAGE_MODEL_FALLBACK, payload, timeout=fallback_timeout)
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Fallback Attempt {attempt_num} failed: {e}")
+        
+        # If all attempts failed
+        error_msg = f"Failed to generate sticker. Code: 500, Reason: All attempts exhausted. Last error: {str(last_error)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
