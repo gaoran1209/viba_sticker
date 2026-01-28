@@ -44,7 +44,7 @@ class VibaStickerBot(commands.Bot):
             # We'll keep this for legacy text-based support if needed, or we can guide users to slash commands.
             
             # Simple reply to guide user to slash command
-            await message.reply("💡 请使用 `/post` 指令来生成贴纸，体验更好哦！")
+            await message.reply("💡 Please use the `/post` command to generate stickers for a better experience!")
             return
 
 client = VibaStickerBot()
@@ -55,13 +55,13 @@ STYLE_CHOICES = [
     for name in STICKER_PRESETS.keys()
 ]
 
-@client.tree.command(name="post", description="上传图片并选择风格生成贴纸")
-@app_commands.describe(photo="请上传你的图片", style="请选择图片风格")
+@client.tree.command(name="post", description="Upload a photo and choose a style to generate a sticker")
+@app_commands.describe(photo="Please upload your photo", style="Please choose a style")
 @app_commands.choices(style=STYLE_CHOICES)
 async def post(interaction: discord.Interaction, photo: discord.Attachment, style: app_commands.Choice[str]):
     # Validation
     if not photo.content_type.startswith('image/'):
-        await interaction.response.send_message("❌ 请上传图片文件！", ephemeral=True)
+        await interaction.response.send_message("❌ Please upload an image file!", ephemeral=True)
         return
 
     # Defer the response since generation takes time
@@ -73,7 +73,7 @@ async def post(interaction: discord.Interaction, photo: discord.Attachment, styl
         sticker_prompt = STICKER_PRESETS.get(selected_style_name)
         
         if not sticker_prompt:
-            await interaction.followup.send(f"❌ 未找到风格: {selected_style_name}", ephemeral=True)
+            await interaction.followup.send(f"❌ Style not found: {selected_style_name}", ephemeral=True)
             return
 
         # 1. Download Image
@@ -90,7 +90,7 @@ async def post(interaction: discord.Interaction, photo: discord.Attachment, styl
             image_file.seek(0)
             file = discord.File(image_file, filename="sticker.png")
             await interaction.followup.send(
-                content=f"✨ **{selected_style_name}** 风格贴纸已生成！\n由 {interaction.user.mention} 提交", 
+                content=f"✨ **{selected_style_name}** sticker generated!\nSubmitted by {interaction.user.mention}", 
                 file=file
             )
         
@@ -98,9 +98,9 @@ async def post(interaction: discord.Interaction, photo: discord.Attachment, styl
 
     except Exception as e:
         logger.error(f"Error processing slash command: {e}")
-        error_message = f"❌ 制作失败，请稍后再试。错误信息: {str(e)}"
+        error_message = f"❌ Generation failed, please try again later. Error: {str(e)}"
         if "429" in str(e):
-            error_message = "❌ 制作失败，请求速率过高 (Rate Limit)，请稍后再试。"
+            error_message = "❌ Generation failed, rate limit exceeded. Please try again later."
         
         await interaction.followup.send(content=error_message)
 
