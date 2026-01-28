@@ -10,6 +10,10 @@ from config import GEMINI_API_KEY, GEMINI_IMAGE_MODEL, GEMINI_IMAGE_MODEL_FALLBA
 
 logger = logging.getLogger(__name__)
 
+class NonRetryableError(Exception):
+    """Exception raised for errors that should not trigger a retry."""
+    pass
+
 class AIService:
     def __init__(self):
         self.api_key = GEMINI_API_KEY
@@ -78,6 +82,10 @@ class AIService:
                 if response.status != 200:
                     text = await response.text()
                     logger.error(f"Generate sticker failed ({model}): {text}")
+                    # 4xx errors are usually client errors (bad request, permission, etc) and often not retryable
+                    # but 429 is retryable.
+                    if response.status == 400:
+                         raise NonRetryableError(f"Gemini API Error (Bad Request): {text}")
                     raise Exception(f"Gemini API Error (Generate {model}): {response.status}")
                 
                 data = await response.json()
@@ -88,11 +96,13 @@ class AIService:
                         prompt_feedback = data.get("promptFeedback", {})
                         block_reason = prompt_feedback.get("blockReason")
                         if block_reason:
-                            raise Exception(f"Generation blocked: {block_reason}")
+                            raise NonRetryableError(f"Generation blocked by safety filters: {block_reason}")
                         logger.error(f"No candidates returned. Full response: {json.dumps(data)}")
                         raise Exception("No candidates returned from Gemini API")
 
                     parts = candidates[0].get("content", {}).get("parts", [])
+                    text_responses = []
+                    
                     for part in parts:
                         # Check for both snake_case (Python SDK style) and camelCase (JSON API style)
                         if "inline_data" in part:
@@ -111,11 +121,20 @@ class AIService:
                                 return await self.download_image(text_content)
                             else:
                                 logger.info(f"Received text instead of image: {text_content}")
+                                text_responses.append(text_content)
                     
+                    # If we got here, we didn't find an image
+                    if text_responses:
+                         # The model refused or just chatted instead of generating an image
+                         combined_text = " ".join(text_responses)
+                         raise NonRetryableError(f"Model refused to generate image. Response: {combined_text}")
+
                     keys_found = [list(p.keys()) for p in parts]
                     logger.error(f"No image data found. Parts keys: {keys_found}. Full response: {json.dumps(data)}")
                     raise Exception("No image data found in response")
                     
+                except NonRetryableError:
+                    raise
                 except Exception as e:
                     logger.error(f"Failed to parse image response: {e}")
                     if "Full response" not in str(e):
@@ -124,6 +143,8 @@ class AIService:
         except asyncio.TimeoutError:
             logger.error(f"Timeout calling Gemini API ({model}) after {timeout}s")
             raise Exception(f"Timeout calling Gemini API ({model})")
+        except NonRetryableError:
+            raise
         except Exception as e:
             logger.error(f"Error calling Gemini API ({model}): {e}")
             raise e
@@ -162,6 +183,9 @@ class AIService:
         try:
             logger.info(f"Attempt 1: Generating with {GEMINI_IMAGE_MODEL} (timeout={primary_timeout}s)...")
             return await self._call_generate_api(GEMINI_IMAGE_MODEL, payload, timeout=primary_timeout)
+        except NonRetryableError as e:
+            logger.error(f"Attempt 1 failed with non-retryable error: {e}")
+            raise e
         except Exception as e:
             elapsed = time.time() - start_time
             logger.warning(f"Attempt 1 failed ({GEMINI_IMAGE_MODEL}): {e}. Elapsed: {elapsed:.2f}s")
@@ -172,6 +196,9 @@ class AIService:
                     retry_timeout = 15
                     logger.info(f"Attempt 2: Quick retry with {GEMINI_IMAGE_MODEL} (timeout={retry_timeout}s)...")
                     return await self._call_generate_api(GEMINI_IMAGE_MODEL, payload, timeout=retry_timeout)
+                except NonRetryableError as e2:
+                     logger.error(f"Attempt 2 failed with non-retryable error: {e2}")
+                     raise e2
                 except Exception as e2:
                     logger.warning(f"Attempt 2 failed: {e2}.")
             else:
@@ -187,6 +214,9 @@ class AIService:
                 attempt_num = i + 1
                 logger.info(f"Fallback Attempt {attempt_num}/{fallback_retries}: Generating with {GEMINI_IMAGE_MODEL_FALLBACK} (timeout={fallback_timeout}s)...")
                 return await self._call_generate_api(GEMINI_IMAGE_MODEL_FALLBACK, payload, timeout=fallback_timeout)
+            except NonRetryableError as e:
+                logger.error(f"Fallback Attempt {attempt_num} failed with non-retryable error: {e}")
+                raise e
             except Exception as e:
                 last_error = e
                 logger.warning(f"Fallback Attempt {attempt_num} failed: {e}")
