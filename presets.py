@@ -1,7 +1,13 @@
 STICKER_PRESETS = {
-    "Inner Animal": """change the image into a sticker. It should feature a stylized illustration sticker of the model and the randomly chosen animal. The top text is bold "Opps!"; the bottom text (in smaller font) is "Inner Animal • A randomly chosen personality word".
-- Strictly maintain the exact facial features, identity, and original clothing of the model from the reference image without any alterations to them. For the model's pose: if the original pose is seated, or if its inherent tension is low, then it must be reinterpreted into a high-fashion editorial pose in the distinctive style of Johnny Dufort. This new pose can be either seated or standing, as long as it achieves significant dramatic tension and impact. However, if the original pose already possesses substantial dramatic tension and visual impact, then the pose should be strictly maintained as is. The model is now interacting dynamically with a randomly chosen animal (excluding snakes) suitable for a high-fashion editorial, positioned by her side, sharing intense, high-fashion eye contact.
-- Overall Tone: The composition should be avant-garde, cinematic, and retain the edgy, high-fashion feel inspired by Johnny Dufort, while strictly adhering to the original model's appearance and attire.""",
+    "Inner Animal": """Create a stylized illustration sticker based on the reference image. The design must feature the character and a randomly selected animal (excluding snakes).
+Text Requirements:
+Top text (Bold): 'Opps!'
+Bottom text (Small font): 'Inner Animal • [Insert a randomly chosen personality adjective]'
+Visual Requirements:
+Character Consistency: Faithfully reproduce the character's facial features and clothing from the reference image without modification.
+Pose Instructions: If the original pose is static or lacks energy, reimagine it as a dramatic, high-fashion editorial pose (seated or standing) in the style of Johnny Dufort. If the original pose already has high visual impact, keep it unchanged.
+Interaction: The character should be dynamically positioned beside the animal, sharing an intense, editorial-style gaze.
+Style: The overall aesthetic must be avant-garde, cinematic, and edgy.""",
 
     "Raw nature": """Strictly maintain the exact facial features, identity, and original clothing of the model from the reference image without any alterations to them. For the model's pose: if the original pose is seated, or if its inherent tension is low, then it must be reinterpreted into a high-fashion editorial pose in the distinctive style of Johnny Dufort. This new pose can be either seated or standing, as long as it achieves significant dramatic tension and impact. However, if the original pose already possesses substantial dramatic tension and visual impact, then the pose should be strictly maintained as is. The model is now interacting dynamically with a randomly chosen animal (excluding snakes) suitable for a high-fashion editorial, positioned by her side, sharing intense, high-fashion eye contact. 
 - Top-Left Sticker: Add a graphic fashion sticker in the top-left corner. It should feature a stylized illustration of the model and the randomly chosen animal. The top text is bold "Opps!"; the bottom text (in smaller font) is "Inner Animal • A randomly chosen personality word". 
