@@ -1,0 +1,32 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          # port: 22 # Default is 22
+          script: |
+            # 1. Navigate to project directory
+            # Make sure this directory exists and is a git repo on the server
+            cd ~/viba_sticker 
+            
+            # 2. Pull latest code
+            git pull origin main
+            
+            # 3. Rebuild and restart container
+            # --build ensures we use the new code even if dependencies didn't change
+            docker-compose up -d --build --remove-orphans
+            
+            # 4. Clean up unused images to save space
+            docker image prune -f
