@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  viba_sticker:
+    build: .
+    container_name: viba_sticker
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    # No ports needed as it's an outbound Discord bot

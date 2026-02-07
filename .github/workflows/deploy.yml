@@ -1,0 +1,35 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Navigate to the project directory
+            cd ~/viba_sticker || exit 1
+            
+            # Pull the latest changes
+            git pull origin main
+            
+            # Rebuild and restart the container
+            # --build forces a rebuild of the image
+            # -d runs in detached mode
+            docker compose up -d --build --remove-orphans
+            
+            # Prune unused images to save space
+            docker image prune -f
