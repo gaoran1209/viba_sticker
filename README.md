@@ -46,8 +46,15 @@ Discord bot that turns your images into stylized stickers using Google's Gemini 
 4. **Select a Style** from the dropdown menu (the list is dynamically loaded from presets).
 5. The bot will process your image and reply with a generated sticker!
 
-## Deployment (Railway)
+## Deployment
 
+This project supports multiple deployment methods:
+
+### Option 1: Docker on EC2 (Recommended)
+We use Docker for isolation and GitHub Actions for automated deployment.
+👉 **[See detailed DEPLOY.md guide](DEPLOY.md)**
+
+### Option 2: Railway (Legacy)
 1. Connect your GitHub repository to Railway.
 2. Add the environment variables (`DISCORD_TOKEN`, `GEMINI_API_KEY`) in Railway settings.
 3. Railway should automatically detect the `Procfile` and start the worker.
