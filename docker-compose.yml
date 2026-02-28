@@ -1,0 +1,7 @@
+services:
+  bot:
+    build: .
+    container_name: viba_sticker
+    restart: always
+    env_file:
+      - .env
