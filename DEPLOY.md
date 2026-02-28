@@ -49,7 +49,7 @@ GEMINI_API_KEY=your_gemini_key_here
 **Optional Variables:**
 ```env
 GEMINI_TEXT_MODEL=gemini-3-pro-preview
-GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
 GEMINI_IMAGE_MODEL_FALLBACK=gemini-2.5-flash-image
 ```
 

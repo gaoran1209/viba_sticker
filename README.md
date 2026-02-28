@@ -24,7 +24,7 @@ Upload any photo, choose a creative style, and let Gemini AI generate a unique s
 ## ⚡ Features
 
 - **Slash Commands** — Clean `/post` interface with interactive style picker
-- **Dual-Model Fallback** — Primary (`gemini-3-pro-image-preview`) with automatic fallback to `gemini-2.5-flash-image` for high reliability
+- **Dual-Model Fallback** — Primary (`gemini-3.1-flash-image-preview`) with automatic fallback to `gemini-2.5-flash-image` for high reliability
 - **Image Optimization** — Auto-compresses and resizes uploads for faster generation
 - **Smart Retries** — Quick retry on fast failures, multi-attempt fallback strategy
 - **Safety Handling** — Graceful error messages for rate limits and content filters
@@ -62,7 +62,7 @@ DISCORD_TOKEN=your_discord_bot_token
 GEMINI_API_KEY=your_gemini_api_key
 
 # Optional (defaults shown)
-GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
 GEMINI_IMAGE_MODEL_FALLBACK=gemini-2.5-flash-image
 ```
 

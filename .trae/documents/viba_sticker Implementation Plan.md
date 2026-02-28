@@ -13,7 +13,7 @@ This plan outlines the steps to build the `viba_sticker` Discord bot as per the 
     - Uses `aiohttp` to call `gemini-3-pro-preview`.
     - Constructs the payload to ask the model to convert the user's request into a stable diffusion/sticker-style prompt.
 - **Method `generate_sticker(prompt: str, image_url: str) -> bytes`**:
-    - Uses `aiohttp` to call `gemini-3-pro-image-preview`.
+    - Uses `aiohttp` to call `gemini-3.1-flash-image-preview`.
     - Sends the refined prompt and the original image URL.
     - Returns the binary image data.
 
