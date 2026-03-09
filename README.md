@@ -72,6 +72,8 @@ GEMINI_IMAGE_MODEL_FALLBACK=gemini-2.5-flash-image
 python bot.py
 ```
 
+For EC2 deployments via GitHub Actions, production secrets should be configured in GitHub repository Secrets, not committed in a `.env` file. The deploy workflow writes those values to `~/viba_sticker/.env` on the EC2 host before restarting the container.
+
 ## 💬 Usage
 
 1. Invite the bot to your Discord server
@@ -126,6 +128,7 @@ The project supports automated deployment via Docker + GitHub Actions.
 - Docker Compose configuration
 - CI/CD workflow (push to `main` → auto-deploy)
 - Server maintenance commands
+- GitHub Secrets configuration for `DISCORD_TOKEN` and `GEMINI_API_KEY`
 
 ### Railway (Legacy)
 

@@ -8,6 +8,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_IMAGE_MODEL: gemini-3.1-flash-image-preview
+      GEMINI_IMAGE_MODEL_FALLBACK: gemini-2.5-flash-image
 
     steps:
       - name: Deploy to EC2 via SSH
@@ -16,8 +21,15 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DISCORD_TOKEN,GEMINI_API_KEY,GEMINI_IMAGE_MODEL,GEMINI_IMAGE_MODEL_FALLBACK
           script: |
             cd ~/viba_sticker
             git pull origin main
+            printf '%s\n' \
+              "DISCORD_TOKEN=${DISCORD_TOKEN}" \
+              "GEMINI_API_KEY=${GEMINI_API_KEY}" \
+              "GEMINI_IMAGE_MODEL=${GEMINI_IMAGE_MODEL}" \
+              "GEMINI_IMAGE_MODEL_FALLBACK=${GEMINI_IMAGE_MODEL_FALLBACK}" \
+              > .env
             docker-compose down --remove-orphans
             docker-compose up -d --build
